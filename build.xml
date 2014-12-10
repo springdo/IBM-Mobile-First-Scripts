@@ -1,0 +1,508 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <!--
+  IBM Confidential OCO Source Materials
+
+  5725-I43 Copyright IBM Corp. 2011, 2013
+
+  The source code for this program is not published or otherwise
+  divested of its trade secrets, irrespective of what has
+  been deposited with the U.S. Copyright Office.
+-->
+<project basedir="." default="help">
+
+  <!-- read propeties from file -->
+  <property file="build.properties"/>
+
+  <!-- specify properties in this file or loaded from build.properties
+  <property name="worklight.server.install.dir" value=""/>
+  <property name="worklight.hostname" value="localhost"/>
+  <property name="worklight.port" value="10080"/>
+  <property name="worklight.username" value=""/>
+  <property name="worklight.password" value=""/>
+  <property name="worklight.app.dir" value=""/>
+  <property name="worklight.app.environments" value="common,iphone,android,blackberry10,windowsPhone8,windows8,ipad,mobileWebApp"/>
+  -->
+
+  <basename property="ProjectName" file="${basedir}"/>
+  <mkdir dir="bin/classes"/>
+  <!-- Try to guess some property values -->
+  <condition property="worklight.server.install.dir" value="${worklight.server.install.dir}" else="">
+    <isset property="worklight.server.install.dir" />
+  </condition>
+  <condition property="worklight.jars.dir" value="${worklight.jars.dir}" else="${worklight.server.install.dir}/WorklightServer">
+    <isset property="worklight.jars.dir" />
+  </condition>
+  <condition property="worklight.ant.tools.dir" value="${worklight.ant.tools.dir}" else="${worklight.jars.dir}/../ant-tools">
+    <isset property="worklight.ant.tools.dir" />
+  </condition>
+  <condition property="worklight.hostname" value="${worklight.hostname}" else="localhost">
+    <isset property="worklight.hostname" />
+  </condition>
+  <condition property="worklight.port" value="${worklight.port}" else="10080">
+    <isset property="worklight.port" />
+  </condition>
+  <condition property="derby.databases.data.dir" value="${derby.databases.data.dir}" else="${worklight.server.install.dir}/derby/${ProjectName}">
+    <isset property="derby.databases.data.dir" />
+  </condition>
+  <condition property="contextroot" value="${contextroot}" else="/${ProjectName}">
+    <isset property="contextroot" />
+  </condition>
+  <condition property="shortcuts.dir" value="${shortcuts.dir}" else="${basedir}/shortcuts">
+    <isset property="shortcuts.dir" />
+  </condition>
+  <condition property="reports.dir" value="${reports.dir}" else="${basedir}/reports">
+    <isset property="reports.dir" />
+  </condition>
+  <condition property="worklight.project.war.file" value="${worklight.project.war.file}" else="${basedir}/bin/${ProjectName}.war">
+    <isset property="worklight.project.war.file" />
+  </condition>
+  <condition property="was.liberty.install.dir" value="${was.liberty.install.dir}" else="${worklight.server.install.dir}">
+    <isset property="was.liberty.install.dir" />
+  </condition>
+  <condition property="was.liberty.server.name" value="${was.liberty.server.name}" else="worklight">
+    <isset property="was.liberty.server.name" />
+  </condition>
+  <condition property="worklight.server" value="${worklight.server}" else="http://${worklight.hostname}:${worklight.port}">
+    <isset property="worklight.server" />
+  </condition>
+  <condition property="worklight.server.host" value="${worklight.server.host}" else="${worklight.server}/${ProjectName}">
+    <isset property="worklight.server.host" />
+  </condition>
+  <condition property="worklight.admin.url" value="${worklight.admin.url}" else="${worklight.server}/worklightadmin">
+    <isset property="worklight.admin.url" />
+  </condition>
+  <condition property="worklight.username" value="${worklight.username}" else="admin">
+    <isset property="worklight.username" />
+  </condition>
+  <condition property="worklight.password" value="${worklight.password}" else="admin">
+    <isset property="worklight.password" />
+  </condition>
+  <condition property="demo.password" value="${demo.password}" else="demo">
+    <isset property="demo.password" />
+  </condition>
+
+  <taskdef resource="com/worklight/ant/defaults.properties">
+    <classpath>
+      <fileset dir="${worklight.ant.tools.dir}">
+        <include name="worklight-ant-builder.jar"/>
+      </fileset>
+    </classpath>
+  </taskdef>
+  <taskdef resource="com/worklight/ant/defaults.properties">
+    <classpath>
+      <fileset dir="${worklight.jars.dir}">
+        <include name="worklight-ant-deployer.jar"/>
+      </fileset>
+    </classpath>
+  </taskdef>
+  <!-- new wladm tasks -->
+  <taskdef resource="com/worklight/ant/deployers/antlib.xml">
+    <classpath>
+      <fileset dir="${worklight.jars.dir}">
+        <include name="worklight-ant-deployer.jar"/>
+      </fileset>
+    </classpath>
+  </taskdef>
+  <taskdef resource="net/sf/antcontrib/antlib.xml">
+    <classpath>
+      <fileset dir="${worklight.jars.dir}">
+        <include name="ant-contrib-1.0b3.jar"/>
+      </fileset>
+    </classpath>
+  </taskdef>
+  <taskdef resource="com/worklight/upgrader/ant/defaults.properties">
+    <classpath>
+      <pathelement location="${worklight.ant.tools.dir}/worklight-upgrader.jar"/>
+      <pathelement location="${worklight.ant.tools.dir}/worklight-ant-builder.jar"/>
+    </classpath>
+  </taskdef>
+
+  <!-- Classpath for server runtime libraries used when building the WAR -->
+  <path id="server-classpath">
+    <fileset dir="${worklight.jars.dir}" includes="worklight-jee-library.jar" />
+    <fileset dir="${worklight.server.install.dir}/wlp/dev" includes="**/*.jar" />
+  </path>
+
+  <target name="build-All" description="Build MobileFirst adapters and apps for project">
+      <antcall target="build-Adapters" />
+      <antcall target="build-Apps" />
+  </target>
+  <target name="deploy-All" description="Deploy MobileFirst adapters and apps for project">
+      <antcall target="deploy-Adapters" />
+      <antcall target="deploy-Apps" />
+  </target>
+  <target name="build-and-deploy" description="Build and Deploy MobileFirst adapters and apps for project">
+      <antcall target="build-All" />
+      <antcall target="deploy-All" />
+  </target>
+
+  <target name="build-WAR" description="Build worklight WAR for project">
+    <echo message="Building worklight WAR for project ${ProjectName}" />
+    <javac
+      srcdir="server/java"
+      destdir="bin/classes"
+      classpathref="server-classpath"
+      verbose="true"
+      includeantruntime="false"
+    />
+    <war-builder
+      projectfolder="${basedir}"
+      destinationfolder="bin/war"
+      warfile="bin/${ProjectName}.war"
+      classesfolder="bin/classes">
+    </war-builder>
+  </target>
+
+  <target name="build-Adapters" description="Build MobileFirst adapters for project">
+    <echo message="Build MobileFirst adapters for project ${ProjectName}" />
+    <for param="adapter" trim="true">
+      <path>
+        <dirset dir="adapters">
+          <include name="*"/>
+        </dirset>
+      </path>
+      <sequential>
+        <echo message="Building MobileFirst Adapter @{adapter}" />
+        <adapter-builder folder="@{adapter}"
+          destinationFolder="bin">
+        </adapter-builder>
+      </sequential>
+    </for>
+  </target>
+
+  <target name="build-Adapter" description="Build MobileFirst Adapter specified with worklight.adapter.dir for project">
+    <fail unless="worklight.adapter.dir" message="Property worklight.adapter.dir is not set use -D or build.properties"/>
+    <echo message="Build MobileFirst adapter for project ${ProjectName}" />
+    <echo message="Building MobileFirst Adapter ${worklight.adapter.dir}" />
+    <adapter-builder folder="adapters/${worklight.adapter.dir}"
+      destinationFolder="bin">
+    </adapter-builder>
+  </target>
+
+  <target name="deploy-Adapters" description="Deploy MobileFirst adapters for project">
+    <echo message="Deploy MobileFirst adapters for project ${ProjectName}" />
+    <for param="adapter" trim="true">
+      <path>
+        <fileset dir="bin">
+          <include name="*.adapter"/>
+        </fileset>
+      </path>
+      <sequential>
+        <echo message="Deploying MobileFirst Adapter @{adapter} to ${worklight.admin.url}" />
+        <echo message="Username ${worklight.username}" />
+        <wladm url="${worklight.admin.url}" user="${worklight.username}" password="${worklight.password}" secure="false">
+          <deploy-adapter runtime="${ProjectName}" file="@{adapter}"/>
+        </wladm>
+      </sequential>
+    </for>
+  </target>
+
+  <target name="deploy-Adapter" description="Deploy MobileFirst adapter for project">
+    <fail unless="worklight.adapter.dir" message="Property worklight.adapter.dir is not set use -D or build.properties"/>
+    <echo message="Deploy MobileFirst adapter for project ${ProjectName}" />
+    <for param="adapter" trim="true">
+      <path>
+        <fileset dir="bin">
+          <include name="${worklight.adapter.dir}.adapter"/>
+        </fileset>
+      </path>
+      <sequential>
+        <echo message="Deploying MobileFirst Adapter @{adapter} to ${worklight.admin.url}" />
+        <wladm url="${worklight.admin.url}" user="${worklight.username}" password="${worklight.password}" secure="false">
+          <deploy-adapter runtime="${ProjectName}" file="@{adapter}"/>
+        </wladm>
+      </sequential>
+    </for>
+  </target>
+
+
+  <target name="deploy-Apps" description="Deploy MobileFirst apps for project">
+    <echo message="Deploy MobileFirst apps for project ${ProjectName}" />
+    <for param="app" trim="true">
+      <path>
+        <fileset dir="bin">
+          <include name="*.wlapp"/>
+        </fileset>
+      </path>
+      <sequential>
+        <echo message="Deploying MobileFirst App @{app} to ${worklight.admin.url}" />
+        <wladm url="${worklight.admin.url}" user="${worklight.username}" password="${worklight.password}" secure="false">
+          <deploy-app runtime="${ProjectName}" file="@{app}"/>
+        </wladm>
+      </sequential>
+    </for>
+  </target>
+
+  <target name="deploy-App" description="Deploy MobileFirst app for project">
+    <fail unless="worklight.app.dir" message="Property worklight.app.dir is not set use -D or build.properties"/>
+    <echo message="Deploy MobileFirst app for project ${ProjectName}" />
+    <for param="app" trim="true">
+      <path>
+        <fileset dir="bin">
+          <include name="${worklight.app.dir}-*.wlapp"/>
+        </fileset>
+      </path>
+      <sequential>
+        <echo message="Deploying MobileFirst @{app} to ${worklight.admin.url}" />
+        <wladm url="${worklight.admin.url}" user="${worklight.username}" password="${worklight.password}" secure="false">
+          <deploy-app runtime="${ProjectName}" file="@{app}"/>
+        </wladm>
+      </sequential>
+    </for>
+  </target>
+
+  <!-- Builds a hybrid application. If the build-dojo.xml file is found in the app, it is added as a skin build extension -->
+  <macrodef name="build-hybrid">
+    <attribute name="app" />
+    <sequential>
+      <if>
+        <isset property="worklight.app.environments"/>
+        <then>
+          <echo message="Building Hybrid MobileFirst App @{app} for environments=${worklight.app.environments}" />
+          <if>
+            <available file="@{app}/build-dojo.xml" />
+            <then>
+              <!-- Add dojo support if the build-dojo.xml file is present -->
+              <app-builder nativeProjectPrefix="${ProjectName}"
+                applicationFolder="@{app}" outputFolder="bin"
+                worklightServerHost="${worklight.server.host}" environments="${worklight.app.environments}"
+                skinBuildExtensions="build-dojo.xml">
+              </app-builder>
+            </then>
+            <else>
+              <app-builder nativeProjectPrefix="${ProjectName}"
+                applicationFolder="@{app}" outputFolder="bin"
+	            worklightServerHost="${worklight.server.host}" environments="${worklight.app.environments}">
+              </app-builder>
+            </else>
+          </if>
+        </then>
+        <else>
+          <echo message="Building Hybrid MobileFirst App @{app}" />
+          <if>
+            <available file="@{app}/build-dojo.xml" />
+            <then>
+              <!-- Add dojo support if the build-dojo.xml file is present -->
+              <app-builder nativeProjectPrefix="${ProjectName}"
+                applicationFolder="@{app}" outputFolder="bin"
+                worklightServerHost="${worklight.server.host}" skinBuildExtensions="build-dojo.xml">
+              </app-builder>
+            </then>
+            <else>
+              <app-builder nativeProjectPrefix="${ProjectName}"
+                applicationFolder="@{app}" outputFolder="bin"
+                worklightServerHost="${worklight.server.host}">
+              </app-builder>
+            </else>
+          </if>
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <target name="build-Apps" description="Build MobileFirst apps for project">
+    <echo message="Build MobileFirst apps for project ${ProjectName}" />
+    <for param="app" trim="true">
+      <path>
+        <dirset dir="apps">
+          <include name="*"/>
+        </dirset>
+      </path>
+      <sequential>
+        <if>
+          <available file="@{app}/common" />
+          <then>
+            <build-hybrid app="@{app}" />
+          </then>
+          <else>
+            <echo message="Building Native MobileFirst App @{app}" />
+            <native-app-builder
+              sourceFolder="@{app}" DestinationFolder="bin"
+              worklightServerHost="${worklight.server.host}">
+            </native-app-builder>
+          </else>
+        </if>
+      </sequential>
+    </for>
+  </target>
+
+  <target name="build-App" description="Build MobileFirst App specified with worklight.app.dir and optional worklight.app.environments">
+    <fail unless="worklight.app.dir" message="Property worklight.app.dir is not set use -D or build.properties"/>
+    <echo message="Build MobileFirst App for project ${ProjectName}" />
+        <if>
+          <available file="apps/${worklight.app.dir}/common" />
+          <then>
+          	<build-hybrid app="apps/${worklight.app.dir}" />
+          </then>
+          <else>
+            <echo message="Building Native MobileFirst App apps/${worklight.app.dir}" />
+            <native-app-builder
+              sourceFolder="apps/${worklight.app.dir}" DestinationFolder="bin"
+              worklightServerHost="${worklight.server.host}">
+            </native-app-builder>
+          </else>
+        </if>
+  </target>
+
+  <target name="databases" description="Create Database Tables for project">
+    <echo message="Creating database in ${derby.databases.data.dir}"/>
+    <configuredatabase kind="Worklight">
+      <derby database="WRKLGHT" datadir="${derby.databases.data.dir}"/>
+    </configuredatabase>
+    <configuredatabase kind="WorklightReports">
+      <derby database="WLREPORT" datadir="${derby.databases.data.dir}"/>
+    </configuredatabase>
+    <configuredatabase kind="WorklightAdmin">
+      <derby database="WLADMIN" datadir="${derby.databases.data.dir}"/>
+    </configuredatabase>
+  </target>
+
+  <target name="install-admin" description="Installs the MobileFirst administration services">
+    <installworklightadmin>
+      <console />
+      <jmx />
+      <user name="${worklight.username}" password="${worklight.password}" role="worklightadmin"/>
+      <user name="deployer" password="${demo.password}" role="worklightdeployer"/>
+      <user name="monitor" password="${demo.password}" role="worklightmonitor"/>
+      <user name="operator" password="${demo.password}" role="worklightoperator"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${was.liberty.install.dir}" profile="Liberty">
+          <server name="${was.liberty.server.name}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="WorklightAdmin">
+        <derby database="WLADMIN" datadir="${derby.databases.data.dir}"/>
+      </database>
+    </installworklightadmin>
+  </target>
+
+  <target name="install-WAR" description="configures an application server to run a MobileFirst® project's WAR file as a web application">
+    <configureapplicationserver contextroot="${contextroot}" shortcutsDir="${shortcuts.dir}">
+      <project warfile="${worklight.project.war.file}"/>
+      <property name="serverSessionTimeout" value="10"/>
+      <property name="wl.analytics.url" value="${worklight.server}/_analytics/data"/>
+      <property name="wl.analytics.queue.size" value="1"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${was.liberty.install.dir}" profile="Liberty">
+          <server name="${was.liberty.server.name}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="Worklight">
+        <derby database="WRKLGHT" datadir="${derby.databases.data.dir}"/>
+      </database>
+      <database kind="WorklightReports">
+        <derby database="WLREPORT" datadir="${derby.databases.data.dir}"/>
+      </database>
+    </configureapplicationserver>
+  </target>
+
+  <target name="uninstall-WAR" description="Undoes the effects of an earlier install-WAR invocation">
+    <unconfigureapplicationserver contextroot="${contextroot}">
+      <project warfile="${worklight.project.war.file}"/>
+      <property name="serverSessionTimeout" value="10"/>
+      <property name="wl.analytics.url" value="${worklight.server}/_analytics/data"/>
+      <property name="wl.analytics.queue.size" value="1"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${was.liberty.install.dir}" profile="Liberty">
+          <server name="${was.liberty.server.name}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="Worklight">
+        <derby database="WRKLGHT" datadir="${derby.databases.data.dir}"/>
+      </database>
+      <database kind="WorklightReports">
+        <derby database="WLREPORT" datadir="${derby.databases.data.dir}"/>
+      </database>
+    </unconfigureapplicationserver>
+  </target>
+
+  <target name="minimal-update-WAR" description="Updates an already-configured MobileFirst web application on an application server">
+    <updateapplicationserver contextroot="${contextroot}" shortcutsDir="${shortcuts.dir}">
+      <project warfile="${worklight.project.war.file}"/>
+      <property name="serverSessionTimeout" value="10"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${was.liberty.install.dir}" profile="Liberty">
+          <server name="${was.liberty.server.name}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="Worklight">
+        <derby database="WRKLGHT" datadir="${derby.databases.data.dir}"/>
+      </database>
+      <database kind="WorklightReports">
+        <derby database="WLREPORT" datadir="${derby.databases.data.dir}"/>
+      </database>
+    </updateapplicationserver>
+  </target>
+
+  <target name="runtime-status">
+      <wladm url="${worklight.admin.url}" user="${worklight.username}" password="${worklight.password}" secure="false">
+        <show-runtime runtime="${ProjectName}"/>
+      </wladm>
+  </target>
+
+  <target name="app-status">
+      <fail unless="worklight.app" message="Property worklight.app is not set use -D or build.properties"/>
+      <wladm url="${worklight.admin.url}" user="${worklight.username}" password="${worklight.password}" secure="false">
+        <show-app runtime="${ProjectName}" name="${worklight.app}"/>
+      </wladm>
+  </target>
+
+  <target name="upgrade">
+    <project-upgrader projectPath="${project.path}" builderJarPath="${worklight.ant.tools.dir}/worklight-ant-builder.jar" targetVersion="${target.version}"/>
+  </target>
+
+  <target name="help">
+    <basename property="ant.file.basename" file="${ant.file}"/>
+    <echo message="This ant project file can be used in multiple ways"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-WAR"/>
+    <echo message="Builds Worklight WAR file for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-Adapters"/>
+    <echo message="Builds MobileFirst Adapters for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-Apps"/>
+    <echo message="Builds MobileFirst Apps for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-and-deploy"/>
+    <echo message="Build and Deploy MobileFirst adapters and apps for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-Adapter"/>
+    <echo message="Build MobileFirst Adapter specified with worklight.adapter.dir for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-App"/>
+    <echo message="Build MobileFirst App specified with worklight.app.dir and optional worklight.app.environments"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} build-All"/>
+    <echo message="Build MobileFirst adapters and apps for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} deploy-Apps"/>
+    <echo message="Deploy MobileFirst Apps to Server"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} deploy-Adapters"/>
+    <echo message="Deploy MobileFirst Adapters to Server"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} deploy-App"/>
+    <echo message="Deploy MobileFirst App specified with worklight.app.dir to Server"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} deploy-Adapter"/>
+    <echo message="Deploy MobileFirst Adapter specified with worklight.adapter.dir to Server"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} deploy-All"/>
+    <echo message="Deploy MobileFirst adapters and apps for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} databases"/>
+    <echo message="Configure Database Tables for project"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} install-WAR"/>
+    <echo message="Configure Application Server with WAR"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} uninstall-WAR"/>
+    <echo message="Undoes the effects of an earlier install-WAR invocation"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} minimal-update-WAR"/>
+    <echo message="Updates an already-configured MobileFirst web application on an application server"/>
+    <echo/>
+  </target>
+
+</project>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Farm xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="FarmSchema.xsd">
+<LibertyNode ServerID="ServOne"
+AdminPass="tU3NhdMXKMqg"
+AdminUser="WorklightRESTUser" 
+Hostname="localhost" 
+JMXPortNumber="9443"/>
+<LibertyNode ServerID="ServTwo" 
+AdminPass="FfgSHWuTVVir"
+AdminUser="WorklightRESTUser" 
+Hostname="localhost" 
+JMXPortNumber="10443"/>
+</Farm>
