@@ -18,8 +18,9 @@ export SCRIPT_DIR=`pwd`
 export MFP_PROJECT=$(cd ..; pwd)
 
 # export LOCAL_ANT=`type -p ant || echo '/scratch/inst_ant/apache-ant-1.9.2/bin/ant'`
-export LOCAL_ANT="/home/virtuser/IBM/MobileFirst_Platform_Server/tools/apache-ant-1.8.4/bin/ant"
-#export LOCAL_ANT="/usr/local/bin/ant"
+#export LOCAL_ANT="/home/virtuser/IBM/MobileFirst_Platform_Server/tools/apache-ant-1.8.4/bin/ant"
+export LOCAL_ANT="/usr/local/bin/ant"
+
 export ANT_DIR=$SCRIPT_DIR
 export ANTFILE="${ANT_DIR}/build.xml"
 # could use either - prob better to go hostbame
@@ -89,15 +90,28 @@ deployApps()
         -Dpath.to.project=${MFP_PROJECT} 
 }
 
+buildWar()
+{	
+
+}
 
 
-setEnvironment 
+deployWar()
+{
+	
+}
 
-buildAdapters
+#setEnvironment 
 
-buildApps
+buildWar
 
-deployAdapters
+#buildAdapters
 
-deployApps
+#buildApp
+
+deployWar
+
+#deployAdapters
+
+#deployApps
 

@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed Materials - Property of IBM
+    5725-I43 (C) Copyright IBM Corp. 2011, 2014. All Rights Reserved.
+    US Government Users Restricted Rights - Use, duplication or
+    disclosure restricted by GSA ADP Schedule Contract with IBM Corp.
+
+-->
+
+<project basedir="." default="help">
+  <!-- Start of Property Passwords
+        Enter the password value or "************" to be prompted interactively
+  -->
+
+  <property name="database.db2.wladmin.password" value="************"/>
+  <!--
+     Default values for a migration from Worklight Server 6.1 or 6.0
+     to MobileFirst Server, current release:
+       database.db2.worklight.password: value of ${db2.databases.password}
+       database.db2.worklightreports.password: value of ${db2.databases.password}
+  -->
+  <property name="database.db2.worklight.password" value="************"/>
+  <property name="database.db2.worklightreports.password" value="************"/>
+  <!-- End of Property Passwords -->
+
+  <!-- Start of Property Parameters -->
+  <property name="worklight.server.install.dir" value="****UPDATE**** - MobileFirst Server installation directory (example: /opt/IBM/MobileFirst_Platform_Server)"/>
+  <property name="worklight.project.war.file" value="****UPDATE**** - MobileFirst Project WAR file (example: /home/user/worklight.war)"/>
+  <property name="worklight.contextroot" value="****UPDATE**** - Context Root for the MobileFirst runtime environment (example: /worklight)"/>
+  <property name="wladmin.console.install" value="true"/>
+  <property name="wladmin.default.user" value="admin"/>
+  <property name="wladmin.default.user.initialpassword" value="admin"/>
+  <!--
+     Database settings for DB2.
+        If you did not manually create the database(s) and users
+        run the admdatabases and databases targets with the create-database-db2.xml file,
+        which includes DBA credentials.
+  -->
+  <property name="database.db2.host" value="****UPDATE**** - DB2 host name (example: proddb.example.com)"/>
+  <property name="database.db2.port" value="****UPDATE**** - DB2 port, by default 50000 (example: 50000)"/>
+  <property name="database.db2.instance" value="****UPDATE**** - DB2 database instance (example: DB2)"/>
+  <property name="database.db2.driver.dir" value="****UPDATE**** - DB2 JDBC driver directory (example: /opt/database-drivers/db2-9.7)"/>
+  <property name="database.db2.wladmin.dbname" value="****UPDATE**** - Database name for MobileFirst Administration Services (example: WRKLGHT)"/>
+  <property name="database.db2.wladmin.schema" value="****UPDATE**** - Database schema for MobileFirst Administration Services (example: WLADMIN)"/>
+  <property name="database.db2.wladmin.username" value="****UPDATE**** - DB2 user name (example: wluser)"/>
+  <!--
+     Default values for a migration from Worklight Server 6.1 or 6.0
+     to MobileFirst Server, current release:
+       database.db2.worklight.dbname : WRKLGHT
+       database.db2.worklight.schema : ""
+       database.db2.worklight.username: value of ${db2.databases.username}
+       database.db2.worklightreports.dbname : WLREPORT
+       database.db2.worklightreports.schema : ""
+       database.db2.worklightreports.username: value of ${db2.databases.username}
+  -->
+  <property name="database.db2.worklight.dbname" value="****UPDATE**** - Database name for MobileFirst runtime (example: WRKLGHT)"/>
+  <property name="database.db2.worklight.schema" value="****UPDATE**** - Database schema for MobileFirst runtime (example: WRKLGHT)"/>
+  <property name="database.db2.worklight.username" value="****UPDATE**** - DB2 user name (example: wluser)"/>
+  <property name="database.db2.worklightreports.dbname" value="****UPDATE**** - Database name for MobileFirst runtime Reports (example: WRKLGHT)"/>
+  <property name="database.db2.worklightreports.schema" value="****UPDATE**** - Database Schema for MobileFirst runtime Reports (example: WLREPORT)"/>
+  <property name="database.db2.worklightreports.username" value="****UPDATE**** - DB2 user name (example: wluser)"/>
+
+  <!--
+      Application Server.
+  -->
+  <property name="appserver.was.installdir" value="****UPDATE**** - Installation directory of IBM WebSphere Application Server Liberty profile (example: /opt/IBM/WebSphere/Liberty)"/>
+  <property name="appserver.was.profile" value="Liberty"/>
+  <property name="appserver.was85liberty.serverInstance" value="****UPDATE**** - The name of the Liberty server (example: server1)"/>
+  <property name="config.migration.tool.enable" value="true"/>
+
+  <property name="config.parameters.version" value="2.0"/>
+  <!-- End of Property Parameters -->
+
+  <taskdef resource="com/worklight/ant/defaults.properties">
+    <classpath>
+      <fileset dir="${worklight.server.install.dir}/WorklightServer">
+        <include name="worklight-ant-deployer.jar"/>
+      </fileset>
+    </classpath>
+  </taskdef>
+
+  <!-- Start of the databases target Generated by MobileFirst Server -->
+  <target name="databases">
+    <configuredatabase kind="Worklight">
+      <db2 database="${database.db2.worklight.dbname}"
+           server="${database.db2.host}"
+           instance="${database.db2.instance}"
+           user="${database.db2.worklight.username}"
+           port= "${database.db2.port}"
+           schema = "${database.db2.worklight.schema}"
+           password="${database.db2.worklight.password}">
+      </db2>
+      <driverclasspath>
+        <fileset dir="${database.db2.driver.dir}">
+          <include name="db2jcc4.jar"/>
+          <include name="db2jcc_license_*.jar"/>
+        </fileset>
+      </driverclasspath>
+
+      <!-- You use the adminDatabase element to migrate the management data of
+           a Worklight database V6.1 or earlier to the
+           MobileFirst Server administration database.
+      -->
+      <adminDatabase runtimeContextRoot="${worklight.contextroot}">
+
+        <db2 database="${database.db2.wladmin.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.wladmin.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.wladmin.schema}"
+             password="${database.db2.wladmin.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </adminDatabase>
+    </configuredatabase>
+    <configuredatabase kind="WorklightReports">
+      <db2 database="${database.db2.worklightreports.dbname}"
+           server="${database.db2.host}"
+           instance="${database.db2.instance}"
+           user="${database.db2.worklightreports.username}"
+           port= "${database.db2.port}"
+           schema = "${database.db2.worklightreports.schema}"
+           password="${database.db2.worklightreports.password}">
+      </db2>
+      <driverclasspath>
+        <fileset dir="${database.db2.driver.dir}">
+          <include name="db2jcc4.jar"/>
+          <include name="db2jcc_license_*.jar"/>
+        </fileset>
+      </driverclasspath>
+    </configuredatabase>
+  </target>
+  <!-- End of the databases target Generated by MobileFirst Server -->
+
+  <!-- Start of the admdatabases target Generated by MobileFirst Server -->
+  <target name="admdatabases">
+    <configuredatabase kind="WorklightAdmin">
+      <db2 database="${database.db2.wladmin.dbname}"
+           server="${database.db2.host}"
+           instance="${database.db2.instance}"
+           user="${database.db2.wladmin.username}"
+           port= "${database.db2.port}"
+           schema = "${database.db2.wladmin.schema}"
+           password="${database.db2.wladmin.password}">
+      </db2>
+      <driverclasspath>
+        <fileset dir="${database.db2.driver.dir}">
+          <include name="db2jcc4.jar"/>
+          <include name="db2jcc_license_*.jar"/>
+        </fileset>
+      </driverclasspath>
+    </configuredatabase>
+  </target>
+  <!-- End of the admdatabases target Generated by MobileFirst Server -->
+
+  <!-- Start of the install target Generated by MobileFirst Server -->
+  <target name="install">
+    <configureapplicationserver contextroot="${worklight.contextroot}">
+      <project warfile="${worklight.project.war.file}"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${appserver.was.installdir}"
+                                    profile="${appserver.was.profile}">
+          <server name="${appserver.was85liberty.serverInstance}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="Worklight">
+        <db2 database="${database.db2.worklight.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.worklight.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.worklight.schema}"
+             password="${database.db2.worklight.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+      <database kind="WorklightReports">
+        <db2 database="${database.db2.worklightreports.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.worklightreports.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.worklightreports.schema}"
+             password="${database.db2.worklightreports.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+    </configureapplicationserver>
+  </target>
+  <!-- End of the install target Generated by MobileFirst Server -->
+
+  <!-- Start of the minimal-update target Generated by MobileFirst Server -->
+  <target name="minimal-update">
+    <updateapplicationserver contextroot="${worklight.contextroot}">
+      <project warfile="${worklight.project.war.file}"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${appserver.was.installdir}"
+                                    profile="${appserver.was.profile}">
+          <server name="${appserver.was85liberty.serverInstance}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="Worklight">
+        <db2 database="${database.db2.worklight.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.worklight.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.worklight.schema}"
+             password="${database.db2.worklight.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+      <database kind="WorklightReports">
+        <db2 database="${database.db2.worklightreports.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.worklightreports.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.worklightreports.schema}"
+             password="${database.db2.worklightreports.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+    </updateapplicationserver>
+  </target>
+  <!-- End of the minimal-update target Generated by MobileFirst Server -->
+
+  <!-- Start of the uninstall target Generated by MobileFirst Server -->
+  <target name="uninstall">
+    <unconfigureapplicationserver contextroot="${worklight.contextroot}">
+      <project warfile="${worklight.project.war.file}"/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${appserver.was.installdir}"
+                                    profile="${appserver.was.profile}">
+          <server name="${appserver.was85liberty.serverInstance}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <database kind="Worklight">
+        <db2 database="${database.db2.worklight.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.worklight.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.worklight.schema}"
+             password="${database.db2.worklight.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+      <database kind="WorklightReports">
+        <db2 database="${database.db2.worklightreports.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.worklightreports.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.worklightreports.schema}"
+             password="${database.db2.worklightreports.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+    </unconfigureapplicationserver>
+  </target>
+  <!-- End of the uninstall target Generated by MobileFirst Server -->
+
+  <!-- Start of the adminstall target Generated by MobileFirst Server -->
+  <target name="adminstall">
+    <installworklightadmin>
+      <console install="${wladmin.console.install}"/>
+      <jmx/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${appserver.was.installdir}"
+                                    profile="${appserver.was.profile}">
+          <server name="${appserver.was85liberty.serverInstance}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <user name="${wladmin.default.user}" role="worklightadmin" password="${wladmin.default.user.initialpassword}"/>
+      <database kind="WorklightAdmin">
+        <db2 database="${database.db2.wladmin.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.wladmin.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.wladmin.schema}"
+             password="${database.db2.wladmin.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+    </installworklightadmin>
+  </target>
+  <!-- End of the adminstall target Generated by MobileFirst Server -->
+
+  <!-- Start of the minimal-admupdate target Generated by MobileFirst Server -->
+  <target name="minimal-admupdate">
+    <updateworklightadmin>
+      <console install="${wladmin.console.install}"/>
+      <jmx/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${appserver.was.installdir}"
+                                    profile="${appserver.was.profile}">
+          <server name="${appserver.was85liberty.serverInstance}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <user name="${wladmin.default.user}" role="worklightadmin" password="${wladmin.default.user.initialpassword}"/>
+      <database kind="WorklightAdmin">
+        <db2 database="${database.db2.wladmin.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.wladmin.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.wladmin.schema}"
+             password="${database.db2.wladmin.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+    </updateworklightadmin>
+  </target>
+  <!-- End of the minimal-admupdate target Generated by MobileFirst Server -->
+
+  <!-- Start of the admuninstall target Generated by MobileFirst Server -->
+  <target name="admuninstall">
+    <uninstallworklightadmin>
+      <console install="${wladmin.console.install}"/>
+      <jmx/>
+      <applicationserver>
+        <websphereapplicationserver installdir="${appserver.was.installdir}"
+                                    profile="${appserver.was.profile}">
+          <server name="${appserver.was85liberty.serverInstance}"/>
+        </websphereapplicationserver>
+      </applicationserver>
+      <user name="${wladmin.default.user}" role="worklightadmin" password="${wladmin.default.user.initialpassword}"/>
+      <database kind="WorklightAdmin">
+        <db2 database="${database.db2.wladmin.dbname}"
+             server="${database.db2.host}"
+             user="${database.db2.wladmin.username}"
+             port= "${database.db2.port}"
+             schema = "${database.db2.wladmin.schema}"
+             password="${database.db2.wladmin.password}">
+        </db2>
+        <driverclasspath>
+          <fileset dir="${database.db2.driver.dir}">
+            <include name="db2jcc4.jar"/>
+            <include name="db2jcc_license_*.jar"/>
+          </fileset>
+        </driverclasspath>
+      </database>
+    </uninstallworklightadmin>
+  </target>
+  <!-- End of the admuninstall target Generated by MobileFirst Server -->
+
+  <target name="help">
+    <basename property="ant.file.basename" file="${ant.file}"/>
+    <echo message="This ant project file can be used in the following ways:"/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} admdatabases"/>
+    <echo message="Configures the databases for use with a MobileFirst Administration Services component."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} adminstall"/>
+    <echo message="Installs a MobileFirst Administration Services component in the application server."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} databases"/>
+    <echo message="Configures the databases for use with a MobileFirst runtime environment."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} install"/>
+    <echo message="Adds a MobileFirst runtime environment to an existing Administration Services component."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} minimal-admupdate"/>
+    <echo message="Updates an installed MobileFirst Administration Services component in the application server."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} minimal-update"/>
+    <echo message="Updates an installed MobileFirst Project WAR file and runtime library in the application server."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} uninstall"/>
+    <echo message="Uninstalls a MobileFirst runtime environment from the application server."/>
+    <echo/>
+    <echo message="ant -f ${ant.file.basename} admuninstall"/>
+    <echo message="Uninstalls a MobileFirst Administration Services component from the application server."/>
+    <echo/>
+  </target>
+</project>
